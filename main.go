@@ -15,7 +15,9 @@ type requestBody struct {
 }
 
 func GetHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hello, task")
+	response := fmt.Sprintf("Hello, %s", task)
+	w.Header().Set("Content-Type", "text/plain")
+	fmt.Fprintln(w, response)
 }
 
 func PostHandler(w http.ResponseWriter, r *http.Request) {
@@ -31,8 +33,9 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	// Обновляем глобальную переменную
 	task = request.Message
 
-	// Отправляем ответ
-	fmt.Fprintln(w, "Task received:", task)
+	// Возвращаем то же значение, которое было отправлено в запросе
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(request)
 }
 
 func main() {
