@@ -2,48 +2,57 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-var task string
-
-type requestBody struct {
-	Message string `json:"message"` // Структура для JSON
-}
-
 func GetHandler(w http.ResponseWriter, r *http.Request) {
-	response := fmt.Sprintf("Hello, %s", task)
-	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintln(w, response)
+	var tasks []Task
+
+	// Получаем все записи из таблицы
+	if err := DB.Find(&tasks).Error; err != nil {
+		http.Error(w, "Failed to retrieve tasks", http.StatusInternalServerError)
+		return
+	}
+
+	// Возвращаем слайс задач в JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tasks)
 }
 
 func PostHandler(w http.ResponseWriter, r *http.Request) {
-	var request requestBody
+	var taskInput Task
 
 	// Декодируем JSON из тела запроса
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&taskInput); err != nil {
 		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
-	// Обновляем глобальную переменную
-	task = request.Message
+	// Сохраняем задачу в БД
+	if err := DB.Create(&taskInput).Error; err != nil {
+		http.Error(w, "Failed to save task to database", http.StatusInternalServerError)
+		return
+	}
 
-	// Возвращаем то же значение, которое было отправлено в запросе
+	// Возвращаем сохранённую задачу
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(request)
+	json.NewEncoder(w).Encode(taskInput)
 }
 
 func main() {
+	// Инициализация БД
+	InitDB()
+
+	// Автоматическая миграция модели Task
+	DB.AutoMigrate(&Task{})
+
+	// Создаём маршруты
 	router := mux.NewRouter()
-
 	router.HandleFunc("/get", GetHandler).Methods("GET")
-
 	router.HandleFunc("/post", PostHandler).Methods("POST")
 
-	http.ListenAndServe(":8080", router)
+	// Запускаем сервер
+	http.ListenAndServe("localhost:8080", router)
 }
