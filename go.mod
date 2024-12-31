@@ -1,4 +1,4 @@
-module main.go
+module moy_proekt
 
 go 1.23.1
 
