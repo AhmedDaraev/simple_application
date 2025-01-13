@@ -34,11 +34,17 @@ func (r *taskRepository) GetAllTasks() ([]Task, error) {
 }
 
 func (r *taskRepository) UpdateTaskByID(id uint, task Task) (Task, error) {
+	// Обновляем только те поля, которые не пусты
 	result := r.db.Model(&Task{}).Where("id = ?", id).Updates(task)
 	if result.Error != nil {
 		return Task{}, result.Error
 	}
-	return task, nil
+	// Получаем обновленную сущность
+	var updatedTask Task
+	if err := r.db.First(&updatedTask, id).Error; err != nil {
+		return Task{}, err
+	}
+	return updatedTask, nil
 }
 
 func (r *taskRepository) DeleteTaskByID(id uint) error {
