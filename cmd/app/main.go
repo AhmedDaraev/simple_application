@@ -1,31 +1,41 @@
 package main
 
 import (
+	"log"
 	"moy_proekt/internal/database"
 	"moy_proekt/internal/handlers"
 	"moy_proekt/internal/taskService"
-	"net/http"
+	"moy_proekt/internal/web/tasks"
 
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
 	// Инициализация базы данных
-	database.InitDB()
-	database.DB.AutoMigrate(&taskService.Task{})
+	if err := database.InitDB(); err != nil {
+		log.Fatalf("Database initialization failed: %v", err)
+	}
+	if err := database.DB.AutoMigrate(&taskService.Task{}); err != nil {
+		log.Fatalf("AutoMigrate failed: %v", err)
+	}
 
-	// Создание репозитория, сервиса и хендлеров
+	// Настройка репозитория, сервиса и хендлера
 	repo := taskService.NewTaskRepository(database.DB)
 	service := taskService.NewService(repo)
 	handler := handlers.NewHandler(service)
 
-	// Настройка маршрутизатора
-	router := mux.NewRouter()
-	router.HandleFunc("/api/get", handler.GetTasksHandler).Methods("GET")
-	router.HandleFunc("/api/post", handler.PostTaskHandler).Methods("POST")
-	router.HandleFunc("/api/patch/{id}", handler.PatchTaskHandler).Methods("PATCH")
-	router.HandleFunc("/api/delete/{id}", handler.DeleteTaskHandler).Methods("DELETE")
+	// Инициализация Echo
+	e := echo.New()
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
 
-	// Запуск HTTP-сервера
-	http.ListenAndServe(":8080", router)
+	// Регистрация обработчиков
+	strictHandler := tasks.NewStrictHandler(handler, nil) // Нужно добавить middleware, если они понадобятся
+	tasks.RegisterHandlers(e, strictHandler)
+
+	// Запуск сервера
+	if err := e.Start(":8080"); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// TaskRepository определяет интерфейс для работы с задачами
 type TaskRepository interface {
 	CreateTask(task Task) (Task, error)
 	GetAllTasks() ([]Task, error)
@@ -15,6 +16,7 @@ type taskRepository struct {
 	db *gorm.DB
 }
 
+// NewTaskRepository создает новый экземпляр taskRepository
 func NewTaskRepository(db *gorm.DB) TaskRepository {
 	return &taskRepository{db: db}
 }
@@ -29,28 +31,29 @@ func (r *taskRepository) CreateTask(task Task) (Task, error) {
 
 func (r *taskRepository) GetAllTasks() ([]Task, error) {
 	var tasks []Task
-	err := r.db.Find(&tasks).Error
-	return tasks, err
+	result := r.db.Find(&tasks)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return tasks, nil
 }
 
 func (r *taskRepository) UpdateTaskByID(id uint, task Task) (Task, error) {
-	// Обновляем только те поля, которые не пусты
-	result := r.db.Model(&Task{}).Where("id = ?", id).Updates(task)
+	var existingTask Task
+	if err := r.db.First(&existingTask, id).Error; err != nil {
+		return Task{}, err
+	}
+	result := r.db.Model(&existingTask).Updates(task)
 	if result.Error != nil {
 		return Task{}, result.Error
 	}
-	// Получаем обновленную сущность
-	var updatedTask Task
-	if err := r.db.First(&updatedTask, id).Error; err != nil {
-		return Task{}, err
-	}
-	return updatedTask, nil
+	return existingTask, nil
 }
 
 func (r *taskRepository) DeleteTaskByID(id uint) error {
 	result := r.db.Delete(&Task{}, id)
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
+	if result.Error != nil {
+		return result.Error
 	}
-	return result.Error
+	return nil
 }
