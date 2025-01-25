@@ -37,10 +37,18 @@ func (r *userRepository) GetAllUsers() ([]User, error) {
 
 func (r *userRepository) UpdateUserByID(id uint, updatedUser User) (User, error) {
 	var user User
-	result := r.db.Model(&user).Where("id = ?", id).Updates(updatedUser)
+
+	// Выполняем обновление
+	result := r.db.Model(&User{}).Where("id = ?", id).Updates(updatedUser)
 	if result.Error != nil {
 		return User{}, result.Error
 	}
+
+	// Загружаем обновлённый объект из базы данных
+	if err := r.db.First(&user, id).Error; err != nil {
+		return User{}, err
+	}
+
 	return user, nil
 }
 

@@ -50,16 +50,19 @@ func (h *UserHandler) PostUsers(ctx context.Context, req users.PostUsersRequestO
 }
 
 func (h *UserHandler) PatchUsersId(ctx context.Context, req users.PatchUsersIdRequestObject) (users.PatchUsersIdResponseObject, error) {
+	// Создаём объект с обновлёнными данными
 	updatedUser := userService.User{
 		Email:    *req.Body.Email,
 		Password: *req.Body.Password,
 	}
 
+	// Обновляем пользователя через сервис
 	result, err := h.service.UpdateUserByID(uint(req.Id), updatedUser)
 	if err != nil {
 		return nil, err
 	}
 
+	// Формируем успешный ответ
 	return users.PatchUsersId200JSONResponse{
 		Id:       toIntPtr(int(result.ID)),
 		Email:    &result.Email,

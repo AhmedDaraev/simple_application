@@ -8,7 +8,7 @@ type TaskRepository interface {
 	GetAllTasks() ([]Task, error)
 	UpdateTaskByID(id uint, task Task) (Task, error)
 	DeleteTaskByID(id uint) error
-	GetTaskByID(id uint) (*Task, error) // Добавляем метод в интерфейс
+	GetTaskByID(id uint) (*Task, error) // Метод для получения задачи по ID
 }
 
 type taskRepository struct {
@@ -37,11 +37,18 @@ func (r *taskRepository) GetAllTasks() ([]Task, error) {
 }
 
 func (r *taskRepository) UpdateTaskByID(id uint, task Task) (Task, error) {
+	var updatedTask Task
 	result := r.db.Model(&Task{}).Where("id = ?", id).Updates(task)
 	if result.Error != nil {
 		return Task{}, result.Error
 	}
-	return task, nil
+
+	// Загружаем обновленный объект из базы данных
+	if err := r.db.First(&updatedTask, id).Error; err != nil {
+		return Task{}, err
+	}
+
+	return updatedTask, nil
 }
 
 func (r *taskRepository) DeleteTaskByID(id uint) error {
@@ -52,12 +59,12 @@ func (r *taskRepository) DeleteTaskByID(id uint) error {
 	return nil
 }
 
-// Реализация метода GetTaskByID
 func (r *taskRepository) GetTaskByID(id uint) (*Task, error) {
 	var task Task
 	result := r.db.First(&task, id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
+			// Если запись не найдена, возвращаем nil
 			return nil, nil
 		}
 		return nil, result.Error

@@ -70,7 +70,6 @@ func (h *TaskHandler) DeleteTasksId(ctx context.Context, req tasks.DeleteTasksId
 	return tasks.DeleteTasksId204Response{}, nil
 }
 
-// Реализация метода GetTasksId
 func (h *TaskHandler) GetTasksId(ctx context.Context, req tasks.GetTasksIdRequestObject) (tasks.GetTasksIdResponseObject, error) {
 	task, err := h.service.GetTaskByID(uint(req.Id))
 	if err != nil {
