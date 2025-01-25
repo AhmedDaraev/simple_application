@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  title: Task API
+  title: Task and User API
   version: 1.0.0
 paths:
   /tasks:
@@ -93,6 +93,75 @@ paths:
         '204':
           description: Task deleted successfully
 
+  /users:
+    get:
+      tags:
+        - users
+      summary: Get all users
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      tags:
+        - users
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{id}:
+    patch:
+      tags:
+        - users
+      summary: Update a user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    delete:
+      tags:
+        - users
+      summary: Delete a user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: User deleted
+
 components:
   schemas:
     Task:
@@ -100,7 +169,6 @@ components:
       properties:
         id:
           type: integer
-          format: uint32
         task:
           type: string
         is_done:
@@ -112,6 +180,8 @@ components:
           type: string
         is_done:
           type: boolean
+      required:
+        - task
     TaskUpdate:
       type: object
       properties:
@@ -119,3 +189,29 @@ components:
           type: string
         is_done:
           type: boolean
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        password:
+          type: string
+    UserCreate:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+    UserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string

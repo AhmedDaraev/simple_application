@@ -10,92 +10,78 @@ type TaskHandler struct {
 	service *taskService.TaskService
 }
 
-func NewHandler(service *taskService.TaskService) *TaskHandler {
+func NewTaskHandler(service *taskService.TaskService) *TaskHandler {
 	return &TaskHandler{service: service}
 }
 
-func (h *TaskHandler) GetTasks(ctx context.Context, request tasks.GetTasksRequestObject) (tasks.GetTasksResponseObject, error) {
+func (h *TaskHandler) GetTasks(ctx context.Context, _ tasks.GetTasksRequestObject) (tasks.GetTasksResponseObject, error) {
 	tasksList, err := h.service.GetAllTasks()
 	if err != nil {
 		return nil, err
 	}
-	response := tasks.GetTasks200JSONResponse{}
-	for _, t := range tasksList {
-		response = append(response, tasks.Task{
-			Id: func(id uint) *uint32 {
-				v := uint32(id)
-				return &v
-			}(t.ID),
-			Task:   &t.Task,
-			IsDone: &t.IsDone,
-		})
+
+	response := make(tasks.GetTasks200JSONResponse, len(tasksList))
+	for i, task := range tasksList {
+		response[i] = tasks.Task{
+			Id:     toIntPtr(int(task.ID)),
+			Task:   &task.Task,
+			IsDone: &task.IsDone,
+		}
 	}
 	return response, nil
 }
 
-func (h *TaskHandler) PostTasks(ctx context.Context, request tasks.PostTasksRequestObject) (tasks.PostTasksResponseObject, error) {
+func (h *TaskHandler) PostTasks(ctx context.Context, req tasks.PostTasksRequestObject) (tasks.PostTasksResponseObject, error) {
 	newTask := taskService.Task{
-		Task:   *request.Body.Task,
-		IsDone: *request.Body.IsDone,
+		Task:   req.Body.Task,
+		IsDone: *req.Body.IsDone,
 	}
 	createdTask, err := h.service.CreateTask(newTask)
 	if err != nil {
 		return nil, err
 	}
-	response := tasks.PostTasks201JSONResponse{
-		Id: func(id uint) *uint32 {
-			v := uint32(id)
-			return &v
-		}(createdTask.ID),
+	return tasks.PostTasks201JSONResponse{
+		Id:     toIntPtr(int(createdTask.ID)),
 		Task:   &createdTask.Task,
 		IsDone: &createdTask.IsDone,
-	}
-	return response, nil
+	}, nil
 }
 
-func (h *TaskHandler) DeleteTasksId(ctx context.Context, request tasks.DeleteTasksIdRequestObject) (tasks.DeleteTasksIdResponseObject, error) {
-	err := h.service.DeleteTaskByID(uint(request.Id))
+func (h *TaskHandler) PatchTasksId(ctx context.Context, req tasks.PatchTasksIdRequestObject) (tasks.PatchTasksIdResponseObject, error) {
+	updatedTask := taskService.Task{
+		Task:   *req.Body.Task,
+		IsDone: *req.Body.IsDone,
+	}
+	result, err := h.service.UpdateTaskByID(uint(req.Id), updatedTask)
 	if err != nil {
+		return nil, err
+	}
+	return tasks.PatchTasksId200JSONResponse{
+		Id:     toIntPtr(int(result.ID)),
+		Task:   &result.Task,
+		IsDone: &result.IsDone,
+	}, nil
+}
+
+func (h *TaskHandler) DeleteTasksId(ctx context.Context, req tasks.DeleteTasksIdRequestObject) (tasks.DeleteTasksIdResponseObject, error) {
+	if err := h.service.DeleteTaskByID(uint(req.Id)); err != nil {
 		return nil, err
 	}
 	return tasks.DeleteTasksId204Response{}, nil
 }
 
-func (h *TaskHandler) GetTasksId(ctx context.Context, request tasks.GetTasksIdRequestObject) (tasks.GetTasksIdResponseObject, error) {
-	task, err := h.service.GetAllTasks()
+// Реализация метода GetTasksId
+func (h *TaskHandler) GetTasksId(ctx context.Context, req tasks.GetTasksIdRequestObject) (tasks.GetTasksIdResponseObject, error) {
+	task, err := h.service.GetTaskByID(uint(req.Id))
 	if err != nil {
 		return nil, err
 	}
-	if len(task) == 0 {
-		return nil, nil
+	if task == nil {
+		return tasks.GetTasksId404Response{}, nil
 	}
-	response := tasks.GetTasksId200JSONResponse{
-		Id: func(id uint) *uint32 {
-			v := uint32(task[0].ID)
-			return &v
-		}(task[0].ID),
-		Task:   &task[0].Task,
-		IsDone: &task[0].IsDone,
-	}
-	return response, nil
-}
-
-func (h *TaskHandler) PatchTasksId(ctx context.Context, request tasks.PatchTasksIdRequestObject) (tasks.PatchTasksIdResponseObject, error) {
-	updatedTask := taskService.Task{
-		Task:   *request.Body.Task,
-		IsDone: *request.Body.IsDone,
-	}
-	result, err := h.service.UpdateTaskByID(uint(request.Id), updatedTask)
-	if err != nil {
-		return nil, err
-	}
-	response := tasks.PatchTasksId200JSONResponse{
-		Id: func(id uint) *uint32 {
-			v := uint32(id)
-			return &v
-		}(result.ID),
-		Task:   &result.Task,
-		IsDone: &result.IsDone,
-	}
-	return response, nil
+	return tasks.GetTasksId200JSONResponse{
+		Id:     toIntPtr(int(task.ID)),
+		Task:   &task.Task,
+		IsDone: &task.IsDone,
+	}, nil
 }

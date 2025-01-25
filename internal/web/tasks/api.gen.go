@@ -16,15 +16,15 @@ import (
 
 // Task defines model for Task.
 type Task struct {
-	Id     *uint32 `json:"id,omitempty"`
+	Id     *int    `json:"id,omitempty"`
 	IsDone *bool   `json:"is_done,omitempty"`
 	Task   *string `json:"task,omitempty"`
 }
 
 // TaskCreate defines model for TaskCreate.
 type TaskCreate struct {
-	IsDone *bool   `json:"is_done,omitempty"`
-	Task   *string `json:"task,omitempty"`
+	IsDone *bool  `json:"is_done,omitempty"`
+	Task   string `json:"task"`
 }
 
 // TaskUpdate defines model for TaskUpdate.

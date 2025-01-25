@@ -1,11 +1,9 @@
 package taskService
 
-// TaskService представляет бизнес-логику приложения
 type TaskService struct {
 	repo TaskRepository
 }
 
-// NewService создает новый экземпляр TaskService
 func NewService(repo TaskRepository) *TaskService {
 	return &TaskService{repo: repo}
 }
@@ -24,4 +22,9 @@ func (s *TaskService) UpdateTaskByID(id uint, task Task) (Task, error) {
 
 func (s *TaskService) DeleteTaskByID(id uint) error {
 	return s.repo.DeleteTaskByID(id)
+}
+
+// Новый метод GetTaskByID
+func (s *TaskService) GetTaskByID(id uint) (*Task, error) {
+	return s.repo.GetTaskByID(id)
 }

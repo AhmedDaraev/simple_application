@@ -5,7 +5,9 @@ import (
 	"moy_proekt/internal/database"
 	"moy_proekt/internal/handlers"
 	"moy_proekt/internal/taskService"
+	"moy_proekt/internal/userService"
 	"moy_proekt/internal/web/tasks"
+	"moy_proekt/internal/web/users"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -14,28 +16,37 @@ import (
 func main() {
 	// Инициализация базы данных
 	if err := database.InitDB(); err != nil {
-		log.Fatalf("Database initialization failed: %v", err)
+		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	if err := database.DB.AutoMigrate(&taskService.Task{}); err != nil {
-		log.Fatalf("AutoMigrate failed: %v", err)
+	if err := database.DB.AutoMigrate(&taskService.Task{}, &userService.User{}); err != nil {
+		log.Fatalf("Failed to auto-migrate: %v", err)
 	}
 
-	// Настройка репозитория, сервиса и хендлера
-	repo := taskService.NewTaskRepository(database.DB)
-	service := taskService.NewService(repo)
-	handler := handlers.NewHandler(service)
+	// Task dependencies
+	tasksRepo := taskService.NewTaskRepository(database.DB)
+	tasksService := taskService.NewService(tasksRepo)
+	tasksHandler := handlers.NewTaskHandler(tasksService)
 
-	// Инициализация Echo
+	// User dependencies
+	userRepo := userService.NewUserRepository(database.DB)
+	userService := userService.NewUserService(userRepo)
+	userHandler := handlers.NewUserHandler(userService)
+
+	// Echo setup
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	// Регистрация обработчиков
-	strictHandler := tasks.NewStrictHandler(handler, nil) // Нужно добавить middleware, если они понадобятся
-	tasks.RegisterHandlers(e, strictHandler)
+	// Task routes
+	taskStrictHandler := tasks.NewStrictHandler(tasksHandler, nil)
+	tasks.RegisterHandlers(e, taskStrictHandler)
 
-	// Запуск сервера
+	// User routes
+	userStrictHandler := users.NewStrictHandler(userHandler, nil)
+	users.RegisterHandlers(e, userStrictHandler)
+
+	// Start server
 	if err := e.Start(":8080"); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		log.Fatalf("Server failed to start: %v", err)
 	}
 }
