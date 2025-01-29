@@ -24,8 +24,8 @@ func (h *UserHandler) GetUsers(ctx context.Context, _ users.GetUsersRequestObjec
 	for i, user := range usersList {
 		response[i] = users.User{
 			Id:       toIntPtr(int(user.ID)),
-			Email:    &user.Email,
-			Password: &user.Password,
+			Email:    toStringPtr(user.Email),
+			Password: toStringPtr(user.Password),
 		}
 	}
 	return response, nil
@@ -44,29 +44,32 @@ func (h *UserHandler) PostUsers(ctx context.Context, req users.PostUsersRequestO
 
 	return users.PostUsers201JSONResponse{
 		Id:       toIntPtr(int(createdUser.ID)),
-		Email:    &createdUser.Email,
-		Password: &createdUser.Password,
+		Email:    toStringPtr(createdUser.Email),
+		Password: toStringPtr(createdUser.Password),
 	}, nil
 }
 
 func (h *UserHandler) PatchUsersId(ctx context.Context, req users.PatchUsersIdRequestObject) (users.PatchUsersIdResponseObject, error) {
-	// Создаём объект с обновлёнными данными
-	updatedUser := userService.User{
-		Email:    *req.Body.Email,
-		Password: *req.Body.Password,
+	updatedUser := userService.User{}
+
+	// Проверяем, есть ли email и password в запросе перед разыменованием
+	if req.Body.Email != nil {
+		updatedUser.Email = *req.Body.Email
+	}
+	if req.Body.Password != nil {
+		updatedUser.Password = *req.Body.Password
 	}
 
-	// Обновляем пользователя через сервис
+	// Обновляем пользователя
 	result, err := h.service.UpdateUserByID(uint(req.Id), updatedUser)
 	if err != nil {
 		return nil, err
 	}
 
-	// Формируем успешный ответ
 	return users.PatchUsersId200JSONResponse{
 		Id:       toIntPtr(int(result.ID)),
-		Email:    &result.Email,
-		Password: &result.Password,
+		Email:    toStringPtr(result.Email),
+		Password: toStringPtr(result.Password),
 	}, nil
 }
 

@@ -173,6 +173,9 @@ components:
           type: string
         is_done:
           type: boolean
+        user_id:
+          type: integer
+          nullable: true # Теперь в Go это *int
     TaskCreate:
       type: object
       properties:
@@ -180,6 +183,9 @@ components:
           type: string
         is_done:
           type: boolean
+        user_id:
+          type: integer
+          nullable: true
       required:
         - task
     TaskUpdate:
@@ -189,6 +195,9 @@ components:
           type: string
         is_done:
           type: boolean
+        user_id:
+          type: integer
+          nullable: true
     User:
       type: object
       properties:

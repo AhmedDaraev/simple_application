@@ -1,6 +1,10 @@
 package userService
 
-import "gorm.io/gorm"
+import (
+	"fmt"
+
+	"gorm.io/gorm"
+)
 
 // UserRepository определяет интерфейс для работы с пользователями
 type UserRepository interface {
@@ -37,6 +41,15 @@ func (r *userRepository) GetAllUsers() ([]User, error) {
 
 func (r *userRepository) UpdateUserByID(id uint, updatedUser User) (User, error) {
 	var user User
+
+	// Проверка, существует ли такой email у другого пользователя
+	if updatedUser.Email != "" {
+		var existingUser User
+		err := r.db.Where("email = ? AND id != ?", updatedUser.Email, id).First(&existingUser).Error
+		if err == nil {
+			return User{}, fmt.Errorf("email %s уже используется другим пользователем", updatedUser.Email)
+		}
+	}
 
 	// Выполняем обновление
 	result := r.db.Model(&User{}).Where("id = ?", id).Updates(updatedUser)

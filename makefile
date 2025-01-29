@@ -21,14 +21,11 @@ deps:
 run:
 	go run cmd/app/main.go
 
-# Генерация API
-gen:
-	oapi-codegen -config openapi/.openapi -include-tags tasks -package tasks openapi/openapi.yaml > ./internal/web/tasks/api.gen.go
-
-# Линтер - инструмент, который анализирует нашу кодовую базу и указывает на все места в которых есть ошибки.
-lint:
-	golangci-lint run --out-format=colored-line-number
-
+# Генерация API (оставляем только одну версию)
 gen:
 	oapi-codegen -config openapi/.openapi -include-tags tasks -package tasks openapi/openapi.yaml > ./internal/web/tasks/api.gen.go
 	oapi-codegen -config openapi/.openapi -include-tags users -package users openapi/openapi.yaml > ./internal/web/users/api.gen.go
+
+# Линтер - инструмент, который анализирует код и указывает на ошибки.
+lint:
+	golangci-lint run --out-format=colored-line-number
