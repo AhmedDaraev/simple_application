@@ -2,6 +2,7 @@ openapi: 3.0.0
 info:
   title: Task and User API
   version: 1.0.0
+
 paths:
   /tasks:
     get:
@@ -22,7 +23,6 @@ paths:
       tags:
         - tasks
       requestBody:
-        description: The task to create
         required: true
         content:
           application/json:
@@ -35,6 +35,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad request (missing required fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /tasks/{id}:
     get:
       summary: Get a task by ID
@@ -55,6 +62,10 @@ paths:
                 $ref: '#/components/schemas/Task'
         '404':
           description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTasksId404Response'
     patch:
       summary: Update a task
       tags:
@@ -66,7 +77,6 @@ paths:
           schema:
             type: integer
       requestBody:
-        description: Fields to update
         required: true
         content:
           application/json:
@@ -79,6 +89,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad request (missing required fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete a task
       tags:
@@ -92,12 +108,18 @@ paths:
       responses:
         '204':
           description: Task deleted successfully
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTasksId404Response'
 
   /users:
     get:
+      summary: Get all users
       tags:
         - users
-      summary: Get all users
       responses:
         '200':
           description: List of users
@@ -108,9 +130,9 @@ paths:
                 items:
                   $ref: '#/components/schemas/User'
     post:
+      summary: Create a new user
       tags:
         - users
-      summary: Create a new user
       requestBody:
         required: true
         content:
@@ -124,11 +146,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request (missing required fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostUsers400Response'
+
   /users/{id}:
     patch:
+      summary: Update a user by ID
       tags:
         - users
-      summary: Update a user by ID
       parameters:
         - name: id
           in: path
@@ -148,10 +177,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request (missing fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchUsersId400Response'
+
     delete:
+      summary: Delete a user by ID
       tags:
         - users
-      summary: Delete a user by ID
       parameters:
         - name: id
           in: path
@@ -161,6 +197,39 @@ paths:
       responses:
         '204':
           description: User deleted
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTasksId404Response'
+
+  /users/{user_id}/tasks:
+    get:
+      summary: Get all tasks for a specific user
+      tags:
+        - tasks
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of tasks for the user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '404':
+          description: No tasks found for the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTasksId404Response'
 
 components:
   schemas:
@@ -175,7 +244,7 @@ components:
           type: boolean
         user_id:
           type: integer
-          nullable: true # Теперь в Go это *int
+          nullable: true
     TaskCreate:
       type: object
       properties:
@@ -224,3 +293,26 @@ components:
           type: string
         password:
           type: string
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+    GetTasksId404Response:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Task not found"
+    PostUsers400Response:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Email and Password are required"
+    PatchUsersId400Response:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "At least one field (Email or Password) must be provided"

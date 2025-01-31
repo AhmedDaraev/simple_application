@@ -21,16 +21,35 @@ func (h *TaskHandler) GetTasks(ctx context.Context, _ tasks.GetTasksRequestObjec
 		return nil, err
 	}
 
-	response := make(tasks.GetTasks200JSONResponse, len(tasksList))
-	for i, task := range tasksList {
-		response[i] = tasks.Task{
+	response := tasks.GetTasks200JSONResponse{}
+	for _, task := range tasksList {
+		response = append(response, tasks.Task{
 			Id:     toIntPtr(int(task.ID)),
 			Task:   toStringPtr(task.Task),
 			IsDone: toBoolPtr(task.IsDone),
 			UserId: toIntPtr(int(task.UserID)),
-		}
+		})
 	}
-	return response, nil
+	return &response, nil
+}
+
+// Получение всех задач конкретного пользователя
+func (h *TaskHandler) GetUsersUserIdTasks(ctx context.Context, req tasks.GetUsersUserIdTasksRequestObject) (tasks.GetUsersUserIdTasksResponseObject, error) {
+	tasksList, err := h.service.GetTasksByUserID(uint(req.UserId))
+	if err != nil {
+		return nil, err
+	}
+
+	response := tasks.GetUsersUserIdTasks200JSONResponse{}
+	for _, task := range tasksList {
+		response = append(response, tasks.Task{
+			Id:     toIntPtr(int(task.ID)),
+			Task:   toStringPtr(task.Task),
+			IsDone: toBoolPtr(task.IsDone),
+			UserId: toIntPtr(int(task.UserID)),
+		})
+	}
+	return &response, nil
 }
 
 // Создание задачи
@@ -39,12 +58,10 @@ func (h *TaskHandler) PostTasks(ctx context.Context, req tasks.PostTasksRequestO
 		Task: req.Body.Task,
 	}
 
-	// Разыменовываем *bool, если не nil
 	if req.Body.IsDone != nil {
 		newTask.IsDone = *req.Body.IsDone
 	}
 
-	// Если передан user_id, конвертируем его в uint
 	if req.Body.UserId != nil {
 		newTask.UserID = uint(*req.Body.UserId)
 	}
@@ -54,20 +71,19 @@ func (h *TaskHandler) PostTasks(ctx context.Context, req tasks.PostTasksRequestO
 		return nil, err
 	}
 
-	// Проверяем, был ли сохранен правильный user_id
-	return tasks.PostTasks201JSONResponse{
+	response := tasks.PostTasks201JSONResponse{
 		Id:     toIntPtr(int(createdTask.ID)),
 		Task:   toStringPtr(createdTask.Task),
 		IsDone: toBoolPtr(createdTask.IsDone),
 		UserId: toIntPtr(int(createdTask.UserID)),
-	}, nil
+	}
+	return &response, nil
 }
 
 // Обновление задачи
 func (h *TaskHandler) PatchTasksId(ctx context.Context, req tasks.PatchTasksIdRequestObject) (tasks.PatchTasksIdResponseObject, error) {
 	updatedTask := taskService.Task{}
 
-	// Если переданы новые данные, обновляем их
 	if req.Body.Task != nil {
 		updatedTask.Task = *req.Body.Task
 	}
@@ -83,12 +99,13 @@ func (h *TaskHandler) PatchTasksId(ctx context.Context, req tasks.PatchTasksIdRe
 		return nil, err
 	}
 
-	return tasks.PatchTasksId200JSONResponse{
+	response := tasks.PatchTasksId200JSONResponse{
 		Id:     toIntPtr(int(result.ID)),
 		Task:   toStringPtr(result.Task),
 		IsDone: toBoolPtr(result.IsDone),
 		UserId: toIntPtr(int(result.UserID)),
-	}, nil
+	}
+	return &response, nil
 }
 
 // Удаление задачи
@@ -96,8 +113,10 @@ func (h *TaskHandler) DeleteTasksId(ctx context.Context, req tasks.DeleteTasksId
 	if err := h.service.DeleteTaskByID(uint(req.Id)); err != nil {
 		return nil, err
 	}
-	return tasks.DeleteTasksId204Response{}, nil
+	return &tasks.DeleteTasksId204Response{}, nil
 }
+
+var _ tasks.GetTasksIdResponseObject = (*tasks.GetTasksId404Response)(nil)
 
 // Получение задачи по ID
 func (h *TaskHandler) GetTasksId(ctx context.Context, req tasks.GetTasksIdRequestObject) (tasks.GetTasksIdResponseObject, error) {
@@ -105,14 +124,18 @@ func (h *TaskHandler) GetTasksId(ctx context.Context, req tasks.GetTasksIdReques
 	if err != nil {
 		return nil, err
 	}
+
+	// Если задача не найдена, возвращаем 404 ответ
 	if task == nil {
-		return tasks.GetTasksId404Response{}, nil
+		return tasks.GetTasksIdResponseObject(tasks.GetTasksId404Response{}), nil
 	}
 
-	return tasks.GetTasksId200JSONResponse{
+	// Формируем 200 ответ с данными задачи
+	response := tasks.GetTasksId200JSONResponse{
 		Id:     toIntPtr(int(task.ID)),
 		Task:   toStringPtr(task.Task),
 		IsDone: toBoolPtr(task.IsDone),
 		UserId: toIntPtr(int(task.UserID)),
-	}, nil
+	}
+	return &response, nil // Возвращаем указатель для 200 ответа
 }

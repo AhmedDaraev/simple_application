@@ -14,6 +14,21 @@ import (
 	strictecho "github.com/oapi-codegen/runtime/strictmiddleware/echo"
 )
 
+// GetTasksId404Response defines model for GetTasksId404Response.
+type GetTasksId404Response struct {
+	Error *string `json:"error,omitempty"`
+}
+
+// PatchUsersId400Response defines model for PatchUsersId400Response.
+type PatchUsersId400Response struct {
+	Error *string `json:"error,omitempty"`
+}
+
+// PostUsers400Response defines model for PostUsers400Response.
+type PostUsers400Response struct {
+	Error *string `json:"error,omitempty"`
+}
+
 // User defines model for User.
 type User struct {
 	Email    *string `json:"email,omitempty"`
@@ -178,6 +193,15 @@ func (response PostUsers201JSONResponse) VisitPostUsersResponse(w http.ResponseW
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PostUsers400JSONResponse PostUsers400Response
+
+func (response PostUsers400JSONResponse) VisitPostUsersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type DeleteUsersIdRequestObject struct {
 	Id int `json:"id"`
 }
@@ -194,6 +218,15 @@ func (response DeleteUsersId204Response) VisitDeleteUsersIdResponse(w http.Respo
 	return nil
 }
 
+type DeleteUsersId404JSONResponse GetTasksId404Response
+
+func (response DeleteUsersId404JSONResponse) VisitDeleteUsersIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type PatchUsersIdRequestObject struct {
 	Id   int `json:"id"`
 	Body *PatchUsersIdJSONRequestBody
@@ -208,6 +241,15 @@ type PatchUsersId200JSONResponse User
 func (response PatchUsersId200JSONResponse) VisitPatchUsersIdResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PatchUsersId400JSONResponse PatchUsersId400Response
+
+func (response PatchUsersId400JSONResponse) VisitPatchUsersIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }

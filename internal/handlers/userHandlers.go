@@ -2,8 +2,12 @@ package handlers
 
 import (
 	"context"
+	"net/http"
+
 	"moy_proekt/internal/userService"
 	"moy_proekt/internal/web/users"
+
+	"github.com/labstack/echo/v4"
 )
 
 type UserHandler struct {
@@ -14,6 +18,7 @@ func NewUserHandler(service *userService.UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
+// Получение всех пользователей
 func (h *UserHandler) GetUsers(ctx context.Context, _ users.GetUsersRequestObject) (users.GetUsersResponseObject, error) {
 	usersList, err := h.service.GetAllUsers()
 	if err != nil {
@@ -31,7 +36,15 @@ func (h *UserHandler) GetUsers(ctx context.Context, _ users.GetUsersRequestObjec
 	return response, nil
 }
 
+// Создание пользователя
 func (h *UserHandler) PostUsers(ctx context.Context, req users.PostUsersRequestObject) (users.PostUsersResponseObject, error) {
+	// Проверяем, что поля email и password переданы в запросе
+	if req.Body.Email == "" || req.Body.Password == "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, map[string]string{
+			"error": "Email and Password are required",
+		})
+	}
+
 	newUser := userService.User{
 		Email:    req.Body.Email,
 		Password: req.Body.Password,
@@ -49,6 +62,7 @@ func (h *UserHandler) PostUsers(ctx context.Context, req users.PostUsersRequestO
 	}, nil
 }
 
+// Обновление пользователя
 func (h *UserHandler) PatchUsersId(ctx context.Context, req users.PatchUsersIdRequestObject) (users.PatchUsersIdResponseObject, error) {
 	updatedUser := userService.User{}
 
@@ -58,6 +72,13 @@ func (h *UserHandler) PatchUsersId(ctx context.Context, req users.PatchUsersIdRe
 	}
 	if req.Body.Password != nil {
 		updatedUser.Password = *req.Body.Password
+	}
+
+	// Проверяем, что хотя бы одно поле для обновления передано
+	if updatedUser.Email == "" && updatedUser.Password == "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, map[string]string{
+			"error": "At least one field (Email or Password) must be provided",
+		})
 	}
 
 	// Обновляем пользователя
@@ -73,6 +94,7 @@ func (h *UserHandler) PatchUsersId(ctx context.Context, req users.PatchUsersIdRe
 	}, nil
 }
 
+// Удаление пользователя
 func (h *UserHandler) DeleteUsersId(ctx context.Context, req users.DeleteUsersIdRequestObject) (users.DeleteUsersIdResponseObject, error) {
 	err := h.service.DeleteUserByID(uint(req.Id))
 	if err != nil {
